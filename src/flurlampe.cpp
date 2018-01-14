@@ -5,7 +5,7 @@
 
 #include "led.hpp"
 
-#include "../../wlan.conf"
+#include "../../wlan.hpp"
 
 #define LEDPIN 16
 
