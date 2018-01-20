@@ -11,8 +11,8 @@
 
 void setup();
 void loop();
-void update_leds();
-void update_mqtt_status();
+void update_leds(void*);
+void update_mqtt_status(void*);
 
 void setup_wifi();
 void callback(char* topic, byte* payload, unsigned int length);
@@ -57,8 +57,8 @@ void setup()
 	blue_led.switch_on();
 	Serial.println("LED initialized");
 	// initialize ticker callbacks
-	ticker.add(0, 10, update_leds);
-	ticker.add(1, 1000, update_mqtt_status);
+	ticker.add(0, 10, update_leds, 0);
+	ticker.add(1, 1000, update_mqtt_status, 0);
 	// setup networking stuff
 	setup_wifi();
 	client.setServer(mqtt_server, 1883);
@@ -135,12 +135,12 @@ void reconnect()
 }
 
 // ticker calls this function to update brightness level of LED
-void update_leds()
+void update_leds(void*)
 {
 	blue_led.fade();
 }
 
-void update_mqtt_status()
+void update_mqtt_status(void*)
 {
 	if(client.connected())
 		client.publish("/home/flur/flurblume/status", String(blue_led.isOn()).c_str() );
