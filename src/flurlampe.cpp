@@ -39,7 +39,7 @@ CLed_fade blue_led(LEDPIN);
 // setup LED and Client
 void setup()
 {
-	pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+	pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
 
 	// Serial Stuff
 	Serial.begin(115200);
@@ -68,7 +68,7 @@ void setup()
 void setup_wifi() 
 {
 
-	digitalWrite(BUILTIN_LED, LOW);
+	digitalWrite(LED_BUILTIN, LOW);
 	delay(10);
 	// We start by connecting to a WiFi network
 	Serial.println();
@@ -79,16 +79,16 @@ void setup_wifi()
 
 	while (WiFi.status() != WL_CONNECTED)
 	{
-		digitalWrite(BUILTIN_LED, LOW);
+		digitalWrite(LED_BUILTIN, LOW);
 		delay(500);
 		Serial.print(".");
-		digitalWrite(BUILTIN_LED, HIGH);
+		digitalWrite(LED_BUILTIN, HIGH);
 	}
 	Serial.println("");
 	Serial.println("WiFi connected");
 	Serial.println("IP address: ");
 	Serial.println(WiFi.localIP());
-	digitalWrite(BUILTIN_LED, HIGH);
+	digitalWrite(LED_BUILTIN, HIGH);
 	delay(100);
 }
 
@@ -120,16 +120,16 @@ void reconnect()
 			// ... and resubscribe
 			client.subscribe("/home/flur/command");
 			client.subscribe("/home/flur/flurblume/command");
-			digitalWrite(BUILTIN_LED, HIGH);
+			digitalWrite(LED_BUILTIN, HIGH);
 		} 
 		else
 		{
-			digitalWrite(BUILTIN_LED, LOW);
+			//digitalWrite(LED_BUILTIN, LOW);
 			Serial.print("failed, rc=");
 			Serial.print(client.state());
 			Serial.println(" try again in 2 seconds");
+			digitalWrite(LED_BUILTIN, HIGH);
 			delay(2000);
-			digitalWrite(BUILTIN_LED, HIGH);
 		}
 	}
 }
