@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
 #include <PubSubClient.h>
 #include <TickerScheduler.h>
 
@@ -14,13 +15,14 @@ void loop();
 void update_leds(void*);
 void update_mqtt_status(void*);
 
-void setup_wifi();
+void reconnect_wifi();
 void callback(char* topic, byte* payload, unsigned int length);
 
 const char* ssid = MAKELIGHT_SSID;
 const char* password = MAKELIGHT_PASS;
 const char* mqtt_server = MAKELIGHT_MQTT_SERVER;
 
+ESP8266WiFiMulti wifiMulti;
 
 // create MQTT client
 WiFiClient espClient;
@@ -42,7 +44,7 @@ void setup()
 	pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
 
 	// Serial Stuff
-	Serial.begin(115200);
+	Serial.begin(9600);
 	Serial.setDebugOutput(true);
 	Serial.println("Start...");
 	delay(10);
@@ -59,37 +61,11 @@ void setup()
 	// initialize ticker callbacks
 	ticker.add(0, 10, update_leds, 0);
 	ticker.add(1, 1000, update_mqtt_status, 0);
+
 	// setup networking stuff
-	setup_wifi();
+	wifiMulti.addAP(ssid, password);
 	client.setServer(mqtt_server, 1883);
 	client.setCallback(callback);
-}
-
-void setup_wifi() 
-{
-
-	digitalWrite(LED_BUILTIN, LOW);
-	delay(10);
-	// We start by connecting to a WiFi network
-	Serial.println();
-	Serial.print("Connecting to ");
-	Serial.println(ssid);
-
-	WiFi.begin(ssid, password);
-
-	while (WiFi.status() != WL_CONNECTED)
-	{
-		digitalWrite(LED_BUILTIN, LOW);
-		delay(500);
-		Serial.print(".");
-		digitalWrite(LED_BUILTIN, HIGH);
-	}
-	Serial.println("");
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
-	digitalWrite(LED_BUILTIN, HIGH);
-	delay(100);
 }
 
 void callback(char* topic, byte* payload, size_t length) {
@@ -107,30 +83,26 @@ void callback(char* topic, byte* payload, size_t length) {
 
 void reconnect() 
 {
-	// Loop until we're reconnected
-	while (!client.connected()) 
+	Serial.print("Attempting MQTT connection...");
+	// Attempt to connect
+	if (client.connect("flurblume")) 
 	{
-		Serial.print("Attempting MQTT connection...");
-		// Attempt to connect
-		if (client.connect("flurblume")) 
-		{
-			Serial.println("connected");
-			// Once connected, publish an announcement...
-			client.publish("/home/flur/flurblume/status", String(blue_led.isOn()).c_str() );
-			// ... and resubscribe
-			client.subscribe("/home/flur/command");
-			client.subscribe("/home/flur/flurblume/command");
-			digitalWrite(LED_BUILTIN, HIGH);
-		} 
-		else
-		{
-			//digitalWrite(LED_BUILTIN, LOW);
-			Serial.print("failed, rc=");
-			Serial.print(client.state());
-			Serial.println(" try again in 2 seconds");
-			digitalWrite(LED_BUILTIN, HIGH);
-			delay(2000);
-		}
+		Serial.println("connected");
+		// Once connected, publish an announcement...
+		client.publish("/home/flur/flurblume/status", String(blue_led.isOn()).c_str() );
+		// ... and resubscribe
+		client.subscribe("/home/flur/command");
+		client.subscribe("/home/flur/flurblume/command");
+		digitalWrite(LED_BUILTIN, HIGH);
+	} 
+	else
+	{
+		//digitalWrite(LED_BUILTIN, LOW);
+		Serial.print("failed, rc=");
+		Serial.print(client.state());
+		Serial.println(" try again in 2 seconds");
+		digitalWrite(LED_BUILTIN, HIGH);
+		delay(2000);
 	}
 }
 
@@ -148,11 +120,15 @@ void update_mqtt_status(void*)
 
 // arduino framework calls this function to update mqtt client and ticker
 void loop() {
-	if(!client.connected())
+
+	wifiMulti.run();
+
+	if(client.connected())
 	{
+		client.loop();
 		reconnect();
-	}
-	client.loop();
+	} 
+
 	ticker.update();
 }
 
