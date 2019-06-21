@@ -8,6 +8,8 @@
 
 #include "../../iot.hpp"
 
+#include "../conf.hpp"
+
 #define LEDPIN 16
 
 void setup();
@@ -42,6 +44,7 @@ CLed_fade blue_led(LEDPIN);
 void setup()
 {
 	pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
+	digitalWrite(LED_BUILTIN, HIGH);
 
 	// Serial Stuff
 	Serial.begin(9600);
@@ -61,6 +64,8 @@ void setup()
 	// initialize ticker callbacks
 	ticker.add(0, 10, update_leds, 0);
 	ticker.add(1, 1000, update_mqtt_status, 0);
+
+	WiFi.hostname(wifi_config::dev_name);
 
 	// setup networking stuff
 	wifiMulti.addAP(ssid, password);
@@ -85,7 +90,7 @@ void reconnect()
 {
 	Serial.print("Attempting MQTT connection...");
 	// Attempt to connect
-	if (client.connect("flurblume")) 
+	if (client.connect(wifi_config::dev_name)) 
 	{
 		Serial.println("connected");
 		// Once connected, publish an announcement...
@@ -93,15 +98,12 @@ void reconnect()
 		// ... and resubscribe
 		client.subscribe("/home/flur/command");
 		client.subscribe("/home/flur/flurblume/command");
-		digitalWrite(LED_BUILTIN, HIGH);
 	} 
 	else
 	{
-		//digitalWrite(LED_BUILTIN, LOW);
 		Serial.print("failed, rc=");
 		Serial.print(client.state());
 		Serial.println(" try again in 2 seconds");
-		digitalWrite(LED_BUILTIN, HIGH);
 		delay(2000);
 	}
 }
