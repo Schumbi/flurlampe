@@ -6,7 +6,7 @@
 
 #include "led.hpp"
 
-#include "../../wlan.hpp"
+#include "../../iot.hpp"
 
 #define LEDPIN 16
 
