@@ -123,11 +123,17 @@ void loop() {
 
 	wifiMulti.run();
 
-	if(client.connected())
-	{
-		client.loop();
-		reconnect();
-	} 
+	if(WiFi.status() == WL_CONNECTED) {
+
+		if(!client.connected())
+		{
+			reconnect();
+		} 
+		else 
+		{
+			client.loop();
+		}
+	}
 
 	ticker.update();
 }
