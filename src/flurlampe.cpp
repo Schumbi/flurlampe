@@ -14,11 +14,11 @@
 
 void setup();
 void loop();
-void update_leds(void*);
-void update_mqtt_status(void*);
+void update_leds (void*);
+void update_mqtt_status (void*);
 
 void reconnect_wifi();
-void callback(char* topic, byte* payload, unsigned int length);
+void callback (char* topic, byte* payload, unsigned int length);
 
 const char* ssid = MAKELIGHT_SSID;
 const char* password = MAKELIGHT_PASS;
@@ -28,115 +28,132 @@ ESP8266WiFiMulti wifiMulti;
 
 // create MQTT client
 WiFiClient espClient;
-PubSubClient client(espClient);
+PubSubClient client (espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
 
 // Ticker to update brightness
-TickerScheduler ticker(5);
+TickerScheduler ticker (5);
 
 // LED Stuff
 long int std_step = 10;
-CLed_fade blue_led(LEDPIN);
+CLed_fade blue_led (LEDPIN);
 
 // setup LED and Client
 void setup()
 {
-	pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
-	digitalWrite(LED_BUILTIN, HIGH);
+    pinMode (LED_BUILTIN, OUTPUT);    // Initialize the LED_BUILTIN pin as an output
+    digitalWrite (LED_BUILTIN, HIGH);
 
-	// Serial Stuff
-	Serial.begin(9600);
-	Serial.setDebugOutput(true);
-	Serial.println("Start...");
-	delay(10);
-	// LED Stuff
-	CLed_fade::brightness_t blue_brightness;
-	// start value
-	blue_brightness.val = 2;
-	blue_brightness.max = 175;
-	blue_brightness.min = blue_brightness.val;
-	blue_brightness.fadeAmount = 1;
-	blue_led.setUp(blue_brightness);
-	blue_led.switch_on();
-	Serial.println("LED initialized");
-	// initialize ticker callbacks
-	ticker.add(0, 10, update_leds, 0);
-	ticker.add(1, 1000, update_mqtt_status, 0);
+    // Serial Stuff
+    Serial.begin (9600);
+    Serial.setDebugOutput (true);
+    Serial.println ("Start...");
+    delay (10);
+    // LED Stuff
+    CLed_fade::brightness_t blue_brightness;
+    // start value
+    blue_brightness.val = 2;
+    blue_brightness.max = 175;
+    blue_brightness.min = blue_brightness.val;
+    blue_brightness.fadeAmount = 1;
+    blue_led.setUp (blue_brightness);
+    blue_led.switch_on();
+    Serial.println ("LED initialized");
+    // initialize ticker callbacks
+    ticker.add (0, 10, update_leds, 0);
+    ticker.add (1, 1000, update_mqtt_status, 0);
 
-	WiFi.hostname(wifi_config::dev_name);
+    WiFi.hostname (wifi_config::dev_name);
+    WiFi.setAutoConnect (true);
+    WiFi.setAutoReconnect (true);
 
-	// setup networking stuff
-	wifiMulti.addAP(ssid, password);
-	client.setServer(mqtt_server, 1883);
-	client.setCallback(callback);
+
+    // setup networking stuff
+    wifiMulti.addAP (ssid, password);
+    client.setServer (mqtt_server, 1883);
+    client.setCallback (callback);
 }
 
-void callback(char* topic, byte* payload, size_t length) {
-	// Switch on the LED if an 1 was received as first character
-	if ((char)payload[0] == '0')
-	{
-		blue_led.switch_off();
-	} 
-	else 
-	{
-		blue_led.switch_on();
-	}
-	Serial.println(topic);
-}
-
-void reconnect() 
+void callback (char* topic, byte* payload, size_t length)
 {
-	Serial.print("Attempting MQTT connection...");
-	// Attempt to connect
-	if (client.connect(wifi_config::dev_name)) 
-	{
-		Serial.println("connected");
-		// Once connected, publish an announcement...
-		client.publish("/home/flur/flurblume/status", String(blue_led.isOn()).c_str() );
-		// ... and resubscribe
-		client.subscribe("/home/flur/command");
-		client.subscribe("/home/flur/flurblume/command");
-	} 
-	else
-	{
-		Serial.print("failed, rc=");
-		Serial.print(client.state());
-		Serial.println(" try again in 2 seconds");
-		delay(2000);
-	}
+    // Switch on the LED if an 1 was received as first character
+    if (length == 0)
+    {
+        return;
+    }
+
+    if ((char)payload[0] == '0')
+    {
+        blue_led.switch_off();
+    }
+    else
+    {
+        blue_led.switch_on();
+    }
+
+    Serial.println (topic);
+}
+
+void reconnect()
+{
+    Serial.print ("Attempting MQTT connection...");
+
+    // Attempt to connect
+    if (client.connect (wifi_config::dev_name))
+    {
+        Serial.println ("connected");
+        // Once connected, publish an announcement...
+        client.publish ("/home/flur/flurblume/status",
+                        String (blue_led.isOn()).c_str() );
+        // ... and resubscribe
+        client.subscribe ("/home/flur/command");
+        client.subscribe ("/home/flur/flurblume/command");
+    }
+    else
+    {
+        Serial.print ("failed, rc=");
+        Serial.print (client.state());
+        Serial.println (" try again in 2 seconds");
+        delay (2000);
+    }
 }
 
 // ticker calls this function to update brightness level of LED
-void update_leds(void*)
+void update_leds (void*)
 {
-	blue_led.fade();
+    blue_led.fade();
 }
 
-void update_mqtt_status(void*)
+void update_mqtt_status (void*)
 {
-	if(client.connected())
-		client.publish("/home/flur/flurblume/status", String(blue_led.isOn()).c_str() );
+    if (client.connected())
+    {
+        client.publish ("/home/flur/flurblume/status",
+                        String (blue_led.isOn()).c_str() );
+    }
 }
 
 // arduino framework calls this function to update mqtt client and ticker
-void loop() {
+void loop()
+{
 
-	wifiMulti.run();
+    //wifiMulti.run();
 
-	if(WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED)
+    {
 
-		if(!client.connected())
-		{
-			reconnect();
-		} 
-		else 
-		{
-			client.loop();
-		}
-	}
+        if (!client.connected())
+        {
+            reconnect();
+        }
+        else
+        {
+            client.loop();
+        }
+    }
 
-	ticker.update();
+    ticker.update();
 }
 
